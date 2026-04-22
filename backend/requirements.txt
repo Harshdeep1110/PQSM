@@ -8,3 +8,5 @@ python-dotenv
 pytest
 pytest-asyncio
 httpx
+python-multipart
+aiofiles

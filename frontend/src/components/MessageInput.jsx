@@ -1,12 +1,14 @@
 /**
  * Module: frontend/src/components/MessageInput.jsx
- * Purpose: Text input and send button for composing messages.
- * Created by: TASK-10
+ * Purpose: Text input, send button, media attach button, and voice recorder for composing messages.
+ * Created by: TASK-10, Modified by: TASK-19
  */
 
 import { useState } from 'react';
+import { MediaUpload } from './MediaUpload';
+import { VoiceRecorder } from './VoiceRecorder';
 
-export function MessageInput({ selectedUser, onSendMessage, disabled }) {
+export function MessageInput({ selectedUser, onSendMessage, onMediaSent, disabled, currentUser }) {
   const [text, setText] = useState('');
 
   const handleSend = () => {
@@ -27,6 +29,12 @@ export function MessageInput({ selectedUser, onSendMessage, disabled }) {
   return (
     <div className="message-input-container" id="message-input-container">
       <div className="message-input-wrapper">
+        <MediaUpload
+          currentUser={currentUser}
+          selectedUser={selectedUser}
+          disabled={disabled}
+          onMediaSent={onMediaSent}
+        />
         <input
           type="text"
           className="message-input"
@@ -51,6 +59,12 @@ export function MessageInput({ selectedUser, onSendMessage, disabled }) {
           <span>🔐</span>
           Send
         </button>
+        <VoiceRecorder
+          currentUser={currentUser}
+          selectedUser={selectedUser}
+          disabled={disabled}
+          onMediaSent={onMediaSent}
+        />
       </div>
     </div>
   );

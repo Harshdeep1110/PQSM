@@ -14,7 +14,7 @@ import { EncryptionVisualizer } from './components/EncryptionVisualizer';
 import { KeyExchangeStatus } from './components/KeyExchangeStatus';
 import './styles/main.css';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
 function App() {
   // Auth state
@@ -35,12 +35,21 @@ function App() {
   const {
     connected,
     messages,
+    setMessages,
     cryptoTraces,
     usersOnline,
     sendMessage,
     clearTraces,
     error: wsError,
   } = useWebSocket(currentUser, userKeys);
+
+  // Handle media file sent — add to local messages state
+  const handleMediaSent = useCallback((mediaMsg) => {
+    setMessages(prev => [...prev, {
+      id: Date.now() + Math.random(),
+      ...mediaMsg,
+    }]);
+  }, [setMessages]);
 
   // Fetch all users periodically
   const fetchUsers = useCallback(async () => {
@@ -341,7 +350,9 @@ function App() {
         <MessageInput
           selectedUser={selectedUser}
           onSendMessage={sendMessage}
+          onMediaSent={handleMediaSent}
           disabled={!connected}
+          currentUser={currentUser}
         />
 
         {/* Connection error banner */}

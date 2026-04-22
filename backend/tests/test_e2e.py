@@ -53,7 +53,7 @@ class TestHealthCheck:
 class TestUserRegistration:
     def test_register_alice(self, client):
         """Register a user and verify keypair generation."""
-        resp = client.post("/register", json={"username": "Alice"})
+        resp = client.post("/register", json={"username": "Alice", "password": "test1234"})
         assert resp.status_code == 200
         data = resp.json()
 
@@ -73,14 +73,14 @@ class TestUserRegistration:
 
     def test_register_duplicate(self, client):
         """Duplicate username should return 400."""
-        client.post("/register", json={"username": "Alice"})
-        resp = client.post("/register", json={"username": "Alice"})
+        client.post("/register", json={"username": "Alice", "password": "test1234"})
+        resp = client.post("/register", json={"username": "Alice", "password": "test1234"})
         assert resp.status_code == 400
 
     def test_list_users(self, client):
         """List users after registration."""
-        client.post("/register", json={"username": "Alice"})
-        client.post("/register", json={"username": "Bob"})
+        client.post("/register", json={"username": "Alice", "password": "test1234"})
+        client.post("/register", json={"username": "Bob", "password": "test1234"})
 
         resp = client.get("/users")
         assert resp.status_code == 200
@@ -217,7 +217,7 @@ class TestWebSocketChat:
         This test verifies the WebSocket transport layer works.
         """
         # Register Alice
-        alice_resp = client.post("/register", json={"username": "Alice"}).json()
+        alice_resp = client.post("/register", json={"username": "Alice", "password": "test1234"}).json()
 
         # Connect Alice via WebSocket
         with client.websocket_connect("/ws/Alice") as ws_alice:
@@ -243,7 +243,7 @@ class TestWebSocketChat:
 
     def test_websocket_ping_pong(self, client):
         """Test WebSocket ping/pong keepalive."""
-        client.post("/register", json={"username": "PingUser"})
+        client.post("/register", json={"username": "PingUser", "password": "test1234"})
 
         with client.websocket_connect("/ws/PingUser") as ws:
             # Drain the initial user_list

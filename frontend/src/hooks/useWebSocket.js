@@ -7,7 +7,9 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-const WS_BASE_URL = 'ws://localhost:8000/ws';
+const WS_BASE_URL = import.meta.env.VITE_BACKEND_WS_URL
+  ? `${import.meta.env.VITE_BACKEND_WS_URL}/ws`
+  : 'ws://localhost:8000/ws';
 
 /**
  * Custom hook for managing WebSocket connections.
@@ -116,6 +118,30 @@ export function useWebSocket(username, keys) {
         }]);
         break;
 
+      case 'media_message':
+        // Received a media file notification from another user
+        setMessages(prev => [...prev, {
+          id: Date.now() + Math.random(),
+          type: 'media_message',
+          media_id: data.media_id,
+          sender: data.sender,
+          receiver: data.receiver || username,
+          file_type: data.file_type,
+          original_filename: data.original_filename,
+          file_size_bytes: data.file_size_bytes,
+          direction: 'received',
+          timestamp: data.timestamp || new Date().toISOString(),
+        }]);
+        break;
+
+      case 'media_crypto_trace':
+        // Media-specific crypto trace for the Encryption Visualizer
+        setCryptoTraces(prev => [...prev, {
+          id: Date.now() + Math.random(),
+          ...data,
+        }]);
+        break;
+
       case 'message_sent':
         // Confirmation that message was sent successfully
         break;
@@ -179,6 +205,7 @@ export function useWebSocket(username, keys) {
   return {
     connected,
     messages,
+    setMessages,
     cryptoTraces,
     usersOnline,
     sendMessage,

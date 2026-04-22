@@ -23,10 +23,14 @@ import os
 # ---------------------------------------------------------------------------
 # Database Configuration
 # ---------------------------------------------------------------------------
-# Store the database file in the project root
+# DATABASE_URL can be overridden via environment variable (e.g., for Render deployment)
 DB_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(DB_DIR, "pqc_messenger.db")
-DATABASE_URL = f"sqlite:///{DB_PATH}"
+DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{DB_PATH}")
+# Ensure sqlite:/// prefix if a bare path is provided
+if not DATABASE_URL.startswith("sqlite"):
+    DATABASE_URL = f"sqlite:///{DATABASE_URL}"
+
 
 # Create engine with check_same_thread=False for FastAPI async compatibility
 engine = create_engine(
@@ -80,6 +84,33 @@ class MessageRecord(Base):
     signature = Column(Text, nullable=False)
     # KEM ciphertext needed for the receiver to decapsulate the shared secret
     kem_ciphertext = Column(Text, nullable=False, default="")
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class MediaFileRecord(Base):
+    """
+    Stores metadata for encrypted media files shared between users.
+    The actual file bytes are stored encrypted on disk (backend/uploads/).
+    Each file gets its own fresh Kyber KEM operation — never reuses chat session keys.
+    Created by: TASK-15
+    """
+    __tablename__ = "media_files"
+
+    id = Column(String(36), primary_key=True)  # UUID
+    sender = Column(String(64), nullable=False, index=True)
+    receiver = Column(String(64), nullable=False, index=True)
+    file_type = Column(String(16), nullable=False)  # image | video | audio | document
+    original_filename = Column(String(255), nullable=False)
+    stored_filename = Column(String(255), nullable=False)  # UUID-based name on disk
+    encrypted_path = Column(String(512), nullable=False)  # Relative path under uploads/
+    file_size_bytes = Column(Integer, nullable=False)
+    # AES-256-GCM crypto metadata (hex-encoded)
+    nonce_hex = Column(String(64), nullable=False)
+    tag_hex = Column(String(64), nullable=False)
+    # Kyber KEM ciphertext for this specific file (hex-encoded)
+    kem_ciphertext_hex = Column(Text, nullable=False)
+    # Dilithium signature over the encrypted file bytes (hex-encoded)
+    signature_hex = Column(Text, nullable=False)
     timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 

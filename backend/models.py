@@ -182,3 +182,33 @@ class WSStatusMessage(BaseModel):
     type: str = "status"
     message: str
     users_online: Optional[list[str]] = None
+
+
+# ---------------------------------------------------------------------------
+# Media Models (TASK-15)
+# ---------------------------------------------------------------------------
+class MediaFileInfo(BaseModel):
+    """A single media file record returned by the API."""
+    id: str
+    sender: str
+    receiver: str
+    file_type: str
+    original_filename: str
+    file_size_bytes: int
+    timestamp: Optional[datetime] = None
+
+
+class MediaUploadResponse(BaseModel):
+    """Response from POST /upload."""
+    media_id: str
+    file_type: str
+    original_filename: str
+    file_size_bytes: int
+    timestamp: Optional[datetime] = None
+    message: str = "File uploaded and encrypted successfully."
+
+
+class MediaHistoryResponse(BaseModel):
+    """Response from GET /media/history/{user_a}/{user_b}."""
+    media: list[MediaFileInfo]
+    count: int

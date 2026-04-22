@@ -1,0 +1,28 @@
+# Render.com Blueprint — PQC Messenger Backend
+# Deploy via: Dashboard > New > Blueprint > Connect GitHub repo
+#
+# Note: liboqs-python requires native compilation (cmake, gcc, libssl-dev).
+# The Dockerfile deploy path is RECOMMENDED over bare Python runtime.
+# See backend/Dockerfile for the Docker-based deployment.
+
+services:
+  - type: web
+    name: pqc-messenger-backend
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: .
+    envVars:
+      - key: DATABASE_URL
+        value: /data/pqc_messenger.db
+      - key: UPLOAD_DIR
+        value: /data/uploads
+      - key: SECRET_KEY
+        generateValue: true
+      - key: MAX_FILE_SIZE_MB
+        value: "50"
+      - key: ALLOWED_ORIGINS
+        sync: false  # Set manually to your Vercel URL after deploy
+    disk:
+      name: pqc-data
+      mountPath: /data
+      sizeGB: 1

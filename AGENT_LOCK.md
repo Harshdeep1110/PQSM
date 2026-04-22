@@ -16,3 +16,14 @@
 | TASK-12  | Antigravity-d108aecc     | DONE        | Key Exchange Status            |
 | TASK-13  | Antigravity-d108aecc     | DONE        | E2E Tests (10/10 passing)      |
 | TASK-14  | Antigravity-d108aecc     | DONE        | README & Demo Instructions     |
+| TASK-15  | Antigravity-d3211adf     | DONE        | DB schema + media_files table  |
+| TASK-16  | Antigravity-d3211adf     | DONE        | file_handler.py — encrypt/decrypt files |
+| TASK-17  | Antigravity-d3211adf     | DONE        | file_store.py — media DB ops   |
+| TASK-18  | Antigravity-d3211adf     | DONE        | Media REST endpoints (upload, download, history) |
+| TASK-19  | Antigravity-d3211adf     | DONE        | MediaUpload.jsx — file picker + preview + progress |
+| TASK-20  | Antigravity-d3211adf     | DONE        | MediaMessage.jsx — image/video/audio renderer |
+| TASK-21  | Antigravity-d3211adf     | DONE        | EncryptionVisualizer extended for media traces |
+| TASK-22  | Antigravity-d3211adf     | DONE        | Env var extraction + .env.example + .gitignore |
+| TASK-23  | Antigravity-d3211adf     | DONE        | render.yaml + Dockerfile       |
+| TASK-24  | Antigravity-d3211adf     | DONE        | vercel.json + frontend .env.example |
+| TASK-25  | Antigravity-d3211adf     | DONE        | DEPLOY_GUIDE.md                |
