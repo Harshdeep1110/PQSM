@@ -20,6 +20,8 @@ from pathlib import Path
 from backend.crypto.kyber import encapsulate, decapsulate
 from backend.crypto.aes_gcm import derive_aes_key
 from backend.crypto.dilithium import sign_message, verify_signature
+from backend.services.audit_logger import CryptoTimer
+from backend.services.gcs_service import is_gcs_enabled, upload_encrypted_media, download_encrypted_media
 
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
@@ -191,26 +193,37 @@ def encrypt_and_store_file(
     file_type = detect_file_type(clean_type, original_filename)
     file_size = len(file_bytes)
 
-    # --- Encryption Pipeline ---
+    # --- Encryption Pipeline (with audit logging) ---
 
     # Step 1: Fresh Kyber KEM — encapsulate shared secret with receiver's public key
-    kem_ciphertext, shared_secret = encapsulate(receiver_public_key)
+    with CryptoTimer("kem_encapsulation", "Kyber512", sender, {"context": "file_upload"}):
+        kem_ciphertext, shared_secret = encapsulate(receiver_public_key)
 
     # Step 2: Derive AES key and encrypt file bytes
-    aes_key = derive_aes_key(shared_secret)
-    nonce = get_random_bytes(12)
-    cipher = AES.new(aes_key, AES.MODE_GCM, nonce=nonce)
-    encrypted_bytes, tag = cipher.encrypt_and_digest(file_bytes)
+    with CryptoTimer("aes_encrypt", "AES-256-GCM", sender, {"context": "file_upload", "size": file_size}):
+        aes_key = derive_aes_key(shared_secret)
+        nonce = get_random_bytes(12)
+        cipher = AES.new(aes_key, AES.MODE_GCM, nonce=nonce)
+        encrypted_bytes, tag = cipher.encrypt_and_digest(file_bytes)
 
     # Step 3: Sign the encrypted bytes with sender's Dilithium key
-    signature = sign_message(encrypted_bytes, sender_sign_key)
+    with CryptoTimer("signature_sign", "ML-DSA-44", sender, {"context": "file_upload"}):
+        signature = sign_message(encrypted_bytes, sender_sign_key)
 
-    # Step 4: Save to disk
+    # Step 4: Save to disk or GCS
     stored_filename = f"{uuid.uuid4()}.enc"
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
-    encrypted_path = os.path.join(UPLOAD_DIR, stored_filename)
-    with open(encrypted_path, "wb") as f:
-        f.write(encrypted_bytes)
+    encrypted_path = f"uploads/{stored_filename}"
+
+    if is_gcs_enabled():
+        # Production: upload to Google Cloud Storage
+        gcs_path = upload_encrypted_media(stored_filename.replace('.enc', ''), encrypted_bytes)
+        encrypted_path = gcs_path
+    else:
+        # Local dev: save to disk
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        disk_path = os.path.join(UPLOAD_DIR, stored_filename)
+        with open(disk_path, "wb") as f:
+            f.write(encrypted_bytes)
 
     return {
         "stored_filename": stored_filename,
@@ -221,7 +234,7 @@ def encrypt_and_store_file(
         "tag_hex": tag.hex(),
         "kem_ciphertext_hex": kem_ciphertext.hex(),
         "signature_hex": signature.hex(),
-        "encrypted_path": f"uploads/{stored_filename}",
+        "encrypted_path": encrypted_path,
     }
 
 
@@ -258,13 +271,16 @@ def decrypt_file(
     kem_ciphertext = bytes.fromhex(kem_ciphertext_hex)
     shared_secret = decapsulate(receiver_secret_key, kem_ciphertext)
 
-    # Step 2: Read encrypted file from disk
-    encrypted_path = os.path.join(UPLOAD_DIR, stored_filename)
-    if not os.path.exists(encrypted_path):
-        raise FileNotFoundError(f"Encrypted file not found: {stored_filename}")
-
-    with open(encrypted_path, "rb") as f:
-        encrypted_bytes = f.read()
+    # Step 2: Read encrypted file from disk or GCS
+    if is_gcs_enabled():
+        media_id = stored_filename.replace('.enc', '')
+        encrypted_bytes = download_encrypted_media(media_id)
+    else:
+        encrypted_path = os.path.join(UPLOAD_DIR, stored_filename)
+        if not os.path.exists(encrypted_path):
+            raise FileNotFoundError(f"Encrypted file not found: {stored_filename}")
+        with open(encrypted_path, "rb") as f:
+            encrypted_bytes = f.read()
 
     # Step 3: Decrypt with AES-256-GCM
     aes_key = derive_aes_key(shared_secret)

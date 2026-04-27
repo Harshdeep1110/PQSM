@@ -1,8 +1,8 @@
 /**
  * Module: frontend/src/App.jsx
  * Purpose: Top-level application component.
- *          Handles login/signup flow, layout, and wires all components together.
- * Created by: TASK-10 (refined with login + password authentication)
+ *          Handles login/signup flow (Firebase or local), layout, and wires all components.
+ * Created by: TASK-10, Modified by: TASK-26 (Firebase Auth integration)
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -12,6 +12,8 @@ import { ChatWindow } from './components/ChatWindow';
 import { MessageInput } from './components/MessageInput';
 import { EncryptionVisualizer } from './components/EncryptionVisualizer';
 import { KeyExchangeStatus } from './components/KeyExchangeStatus';
+import { FirebaseAuth } from './components/FirebaseAuth';
+import { isFirebaseConfigured } from './services/firebaseConfig';
 import './styles/main.css';
 
 const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
@@ -43,7 +45,7 @@ function App() {
     error: wsError,
   } = useWebSocket(currentUser, userKeys);
 
-  // Handle media file sent — add to local messages state
+  // Handle media file sent
   const handleMediaSent = useCallback((mediaMsg) => {
     setMessages(prev => [...prev, {
       id: Date.now() + Math.random(),
@@ -71,14 +73,19 @@ function App() {
 
   // ---------- Persist keys helper ----------
   const persistKeys = (username, keys) => {
-    // sessionStorage for the current tab session
     sessionStorage.setItem('pqc_username', username);
     sessionStorage.setItem('pqc_keys', JSON.stringify(keys));
-    // localStorage so the user can log back in after closing the tab
     localStorage.setItem(`pqc_keys_${username}`, JSON.stringify(keys));
   };
 
-  // ---------- Sign Up ----------
+  // ---------- Firebase Auth Success Handler ----------
+  const handleFirebaseAuthSuccess = (username, keys) => {
+    setUserKeys(keys);
+    setCurrentUser(username);
+    persistKeys(username, keys);
+  };
+
+  // ---------- Local Sign Up ----------
   const handleSignup = async (e) => {
     e.preventDefault();
     const username = usernameInput.trim();
@@ -117,7 +124,7 @@ function App() {
     }
   };
 
-  // ---------- Log In ----------
+  // ---------- Local Log In ----------
   const handleLogin = async (e) => {
     e.preventDefault();
     const username = usernameInput.trim();
@@ -127,7 +134,6 @@ function App() {
     setLoginLoading(true);
     setLoginError('');
 
-    // Try to retrieve keys from localStorage
     const savedKeysStr = localStorage.getItem(`pqc_keys_${username}`);
     if (!savedKeysStr) {
       setLoginError(
@@ -140,7 +146,6 @@ function App() {
     const savedKeys = JSON.parse(savedKeysStr);
 
     try {
-      // Verify password + keys against the server
       const resp = await fetch(`${API_BASE}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -171,7 +176,7 @@ function App() {
   const handleLogout = () => {
     sessionStorage.removeItem('pqc_username');
     sessionStorage.removeItem('pqc_keys');
-    // Note: we keep localStorage keys so the user can log back in
+    sessionStorage.removeItem('pqc_firebase_token');
     setCurrentUser(null);
     setUserKeys(null);
     setSelectedUser(null);
@@ -191,6 +196,11 @@ function App() {
 
   // ---- Login Screen ----
   if (!currentUser) {
+    // Use Firebase auth if configured, otherwise local auth
+    if (isFirebaseConfigured) {
+      return <FirebaseAuth onAuthSuccess={handleFirebaseAuthSuccess} />;
+    }
+
     return (
       <div className="login-screen" id="login-screen">
         <form className="login-card" onSubmit={authMode === 'signup' ? handleSignup : handleLogin}>

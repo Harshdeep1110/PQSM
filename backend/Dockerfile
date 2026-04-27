@@ -1,13 +1,13 @@
-# PQC Messenger Backend — Dockerfile
-# Purpose: Docker image for deploying the backend on Render.com (or any Docker host).
-# Created by: TASK-23
+# PQC Messenger Backend — Dockerfile for Google Cloud Run
+# Purpose: Docker image optimized for Cloud Run serverless containers.
+# Created by: TASK-23, Modified by: TASK-31 (Phase 7 — Cloud Run)
 #
-# liboqs-python requires native compilation, so we install build dependencies
-# (cmake, gcc, libssl-dev) before pip install.
+# liboqs-python requires native compilation (cmake, gcc, libssl-dev).
+# Cloud Run provides HTTP/2 which supports WebSocket connections.
 
-FROM python:3.11-slim
+FROM python:3.11-slim AS builder
 
-# Install system dependencies required for building liboqs from source
+# Install system dependencies for building liboqs from source
 RUN apt-get update && apt-get install -y --no-install-recommends \
     cmake \
     gcc \
@@ -17,26 +17,48 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
 WORKDIR /app
 
-# Copy requirements first for better Docker layer caching
+# Copy requirements first for Docker layer caching
 COPY backend/requirements.txt /app/backend/requirements.txt
 RUN pip install --no-cache-dir -r /app/backend/requirements.txt
+
+# --- Runtime stage ---
+FROM python:3.11-slim
+
+# Install runtime dependencies only
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libssl3 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy installed packages from builder
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy the backend source code
 COPY backend/ /app/backend/
 
-# Create uploads directory
-RUN mkdir -p /data/uploads
+# Create directories
+RUN mkdir -p /data/uploads /app/secrets
 
-# Expose port 8000
-EXPOSE 8000
+# Expose port (Cloud Run injects PORT env var, default 8080)
+EXPOSE 8080
 
-# Environment defaults (can be overridden at runtime)
+# Environment defaults (overridden by Cloud Run env vars / Secret Manager)
 ENV DATABASE_URL=/data/pqc_messenger.db
 ENV UPLOAD_DIR=/data/uploads
 ENV MAX_FILE_SIZE_MB=50
+ENV PORT=8080
+ENV STORAGE_BACKEND=sqlite
+ENV USE_FIREBASE_AUTH=false
+ENV ENABLE_KMS=false
+ENV ENABLE_AUDIT_LOGGING=false
 
-# Start the FastAPI server
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/')"
+
+# Start FastAPI — use PORT env var from Cloud Run
+CMD uvicorn backend.main:app --host 0.0.0.0 --port ${PORT}

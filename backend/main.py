@@ -2,15 +2,21 @@
 Module: backend.main
 Purpose: FastAPI application entry point.
          Defines REST API endpoints and WebSocket endpoint for the PQC Messenger.
-Created by: TASK-08
+         Phase 7: Adds Firebase Authentication, Firestore, GCS, KMS, and Audit Logging.
+Created by: TASK-08, Modified by: TASK-26/27/28/30/31
 
 Endpoints:
-  POST /register          — Register a new user (returns private keys one-time)
+  POST /register          — Register (local auth mode)
+  POST /login             — Login (local auth mode)
+  POST /auth/register     — Register via Firebase
+  POST /auth/login        — Login via Firebase
   GET  /users             — List all registered users
-  GET  /messages/{a}/{b}  — Fetch encrypted message history between two users
+  GET  /messages/{a}/{b}  — Fetch message history
+  GET  /audit/logs        — Fetch crypto audit log entries
+  POST /upload            — Upload encrypted media file
+  GET  /media/{id}        — Download/stream decrypted media
+  GET  /media/history/{a}/{b} — Media history
   WS   /ws/{username}     — WebSocket for real-time encrypted messaging
-
-Run with: uvicorn backend.main:app --reload
 """
 
 import os
@@ -20,7 +26,7 @@ from dotenv import load_dotenv
 # Load .env file if present (for local development)
 load_dotenv()
 
-from fastapi import FastAPI, Depends, HTTPException, WebSocket, UploadFile, File, Form
+from fastapi import FastAPI, Depends, HTTPException, WebSocket, UploadFile, File, Form, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
@@ -31,6 +37,12 @@ from backend.messaging.message_store import get_messages
 from backend.messaging.ws_handler import handle_websocket, manager
 from backend.media.file_handler import encrypt_and_store_file, decrypt_file, ALLOWED_MIME_TYPES
 from backend.media.file_store import save_media_record, get_media_record, get_media_history
+from backend.services.firebase_auth import USE_FIREBASE_AUTH, verify_firebase_token
+from backend.services.firestore_service import (
+    is_firestore_enabled, save_user_firestore, get_user_by_username_firestore,
+    list_users_firestore,
+)
+from backend.services.audit_logger import get_recent_logs, log_crypto_event
 from backend.models import (
     RegisterRequest,
     RegisterResponse,
@@ -43,6 +55,10 @@ from backend.models import (
     MediaUploadResponse,
     MediaFileInfo,
     MediaHistoryResponse,
+    FirebaseRegisterRequest,
+    FirebaseLoginRequest,
+    AuditLogEntry,
+    AuditLogResponse,
 )
 
 # ---------------------------------------------------------------------------
@@ -50,8 +66,9 @@ from backend.models import (
 # ---------------------------------------------------------------------------
 app = FastAPI(
     title="PQC Messenger",
-    description="Post-Quantum Secure Messaging System using Kyber512 + ML-DSA-44 + AES-256-GCM",
-    version="2.0.0",
+    description="Post-Quantum Secure Messaging System using Kyber512 + ML-DSA-44 + AES-256-GCM. "
+                "Deployed on Google Cloud with Firebase Auth, Firestore, GCS, KMS, and Cloud Logging.",
+    version="3.0.0",
 )
 
 # CORS — reads allowed origins from env var, falls back to wildcard for local dev
@@ -89,23 +106,28 @@ def root():
     return {
         "service": "PQC Messenger",
         "status": "running",
+        "version": "3.0.0",
         "algorithms": {
             "kem": "Kyber512",
             "signature": "ML-DSA-44 (Dilithium2)",
             "symmetric": "AES-256-GCM",
         },
+        "google_integrations": {
+            "firebase_auth": USE_FIREBASE_AUTH,
+            "firestore": is_firestore_enabled(),
+            "cloud_storage": is_firestore_enabled(),
+            "cloud_kms": os.environ.get("ENABLE_KMS", "false").lower() == "true",
+            "cloud_logging": os.environ.get("ENABLE_AUDIT_LOGGING", "false").lower() == "true",
+        },
     }
 
 
-@app.post("/register", response_model=RegisterResponse, tags=["Users"])
+# ---------------------------------------------------------------------------
+# Local Auth Endpoints (backward compatible)
+# ---------------------------------------------------------------------------
+@app.post("/register", response_model=RegisterResponse, tags=["Auth (Local)"])
 def api_register(request: RegisterRequest, db: Session = Depends(get_db)):
-    """
-    Register a new user.
-
-    Generates Kyber512 (KEM) and ML-DSA-44 (signature) keypairs.
-    Returns private keys ONE TIME ONLY — the client must store them securely.
-    Public keys are stored on the server for other users to encrypt/verify.
-    """
+    """Register a new user (local auth mode)."""
     try:
         result = register_user(db, request.username, request.password)
         return RegisterResponse(**result)
@@ -113,14 +135,9 @@ def api_register(request: RegisterRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.post("/login", response_model=LoginResponse, tags=["Users"])
+@app.post("/login", response_model=LoginResponse, tags=["Auth (Local)"])
 def api_login(request: LoginRequest, db: Session = Depends(get_db)):
-    """
-    Authenticate a returning user.
-
-    Verifies that the provided private keys match the stored public keys
-    by performing a Kyber KEM round-trip test.
-    """
+    """Authenticate a returning user (local auth mode)."""
     try:
         result = verify_user_keys(
             db,
@@ -134,10 +151,135 @@ def api_login(request: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail=str(e))
 
 
+# ---------------------------------------------------------------------------
+# Firebase Auth Endpoints (Phase 7 — TASK-26)
+# ---------------------------------------------------------------------------
+@app.post("/auth/register", response_model=RegisterResponse, tags=["Auth (Firebase)"])
+def api_firebase_register(
+    request: FirebaseRegisterRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Register a new user via Firebase Authentication.
+
+    1. Verify the Firebase ID token
+    2. Generate Kyber512 + ML-DSA-44 keypairs
+    3. Store public keys in Firestore (or SQLite in local mode)
+    4. Return private keys ONE TIME ONLY
+    """
+    # Verify Firebase token
+    try:
+        firebase_user = verify_firebase_token(request.firebase_id_token)
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=str(e))
+
+    username = request.username
+
+    # Generate PQC keypairs
+    from backend.crypto.kyber import generate_keypair as kyber_generate_keypair
+    from backend.crypto.dilithium import generate_signing_keypair
+
+    kyber_public, kyber_secret = kyber_generate_keypair()
+    dilithium_verify, dilithium_sign = generate_signing_keypair()
+
+    # Log key generation event
+    log_crypto_event("key_generation", "Kyber512", firebase_user["uid"])
+    log_crypto_event("key_generation", "ML-DSA-44", firebase_user["uid"])
+
+    if is_firestore_enabled():
+        # Check if user already exists in Firestore
+        existing = get_user_by_username_firestore(username)
+        if existing:
+            raise HTTPException(status_code=400, detail=f"Username '{username}' is already registered.")
+
+        # Save to Firestore
+        save_user_firestore(
+            uid=firebase_user["uid"],
+            username=username,
+            email=firebase_user["email"],
+            public_key_kyber_hex=kyber_public.hex(),
+            public_key_dilithium_hex=dilithium_verify.hex(),
+        )
+    else:
+        # Fallback: save to SQLite
+        try:
+            register_user(db, username, "firebase-managed")
+        except ValueError:
+            pass  # User might already exist in SQLite
+
+    return RegisterResponse(
+        username=username,
+        secret_key_kyber_hex=kyber_secret.hex(),
+        sign_key_dilithium_hex=dilithium_sign.hex(),
+        public_key_kyber_hex=kyber_public.hex(),
+        verify_key_dilithium_hex=dilithium_verify.hex(),
+        message="Registration successful via Firebase. Store your private keys securely!",
+    )
+
+
+@app.post("/auth/login", response_model=LoginResponse, tags=["Auth (Firebase)"])
+def api_firebase_login(
+    request: FirebaseLoginRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Login via Firebase Authentication.
+
+    1. Verify the Firebase ID token
+    2. Verify that the provided PQC keys match stored public keys
+    3. Return confirmation
+    """
+    try:
+        firebase_user = verify_firebase_token(request.firebase_id_token)
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=str(e))
+
+    if is_firestore_enabled():
+        from backend.services.firestore_service import get_user_firestore
+        user_data = get_user_firestore(firebase_user["uid"])
+        if not user_data:
+            raise HTTPException(status_code=404, detail="User not found. Please register first.")
+
+        # Verify Kyber key via KEM round-trip
+        from backend.crypto.kyber import encapsulate, decapsulate
+        try:
+            pub_key = bytes.fromhex(user_data["public_key_kyber_hex"])
+            sec_key = bytes.fromhex(request.secret_key_kyber_hex)
+            ct, ss = encapsulate(pub_key)
+            recovered = decapsulate(sec_key, ct)
+            if ss != recovered:
+                raise ValueError("Key mismatch")
+        except Exception:
+            raise HTTPException(status_code=401, detail="PQC key verification failed.")
+
+        return LoginResponse(
+            username=user_data["username"],
+            public_key_kyber_hex=user_data["public_key_kyber_hex"],
+            verify_key_dilithium_hex=user_data["public_key_dilithium_hex"],
+            message="Login successful via Firebase. Welcome back!",
+        )
+    else:
+        # Fallback to local auth
+        try:
+            result = verify_user_keys(
+                db, firebase_user.get("name", ""), "firebase-managed",
+                request.secret_key_kyber_hex, request.sign_key_dilithium_hex,
+            )
+            return LoginResponse(**result)
+        except ValueError as e:
+            raise HTTPException(status_code=401, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# User Listing (supports Firestore + SQLite)
+# ---------------------------------------------------------------------------
 @app.get("/users", response_model=UserListResponse, tags=["Users"])
 def api_list_users(db: Session = Depends(get_db)):
     """List all registered users with their public keys."""
-    users = list_users(db)
+    if is_firestore_enabled():
+        users = list_users_firestore()
+    else:
+        users = list_users(db)
     return UserListResponse(
         users=[UserInfo(**u) for u in users],
         count=len(users),
@@ -146,14 +288,32 @@ def api_list_users(db: Session = Depends(get_db)):
 
 @app.get("/messages/{user_a}/{user_b}", response_model=MessageHistoryResponse, tags=["Messages"])
 def api_get_messages(user_a: str, user_b: str, db: Session = Depends(get_db)):
-    """
-    Fetch encrypted message history between two users.
-    Messages are returned in encrypted form — decryption is client-side.
-    """
-    messages = get_messages(db, user_a, user_b)
+    """Fetch encrypted message history between two users."""
+    if is_firestore_enabled():
+        from backend.services.firestore_service import get_messages_firestore
+        messages = get_messages_firestore(user_a, user_b)
+    else:
+        messages = get_messages(db, user_a, user_b)
     return MessageHistoryResponse(
         messages=[MessageInfo(**m) for m in messages],
         count=len(messages),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Audit Log Endpoint (Phase 7 — TASK-30)
+# ---------------------------------------------------------------------------
+@app.get("/audit/logs", response_model=AuditLogResponse, tags=["Audit"])
+def api_get_audit_logs(limit: int = 50):
+    """
+    Fetch recent cryptographic audit log entries.
+    Returns structured log entries from Cloud Logging / in-memory cache.
+    Used by the Encryption Visualizer's Audit Log panel.
+    """
+    logs = get_recent_logs(limit=min(limit, 200))
+    return AuditLogResponse(
+        logs=[AuditLogEntry(**log) for log in logs],
+        count=len(logs),
     )
 
 
@@ -167,14 +327,8 @@ async def api_upload_file(
     receiver: str = Form(...),
     db: Session = Depends(get_db),
 ):
-    """
-    Upload and encrypt a media file.
-
-    The file is encrypted with a FRESH Kyber KEM operation (one-time use),
-    AES-256-GCM for symmetric encryption, and signed with the sender's
-    Dilithium key. Only the encrypted bytes are stored on disk.
-    """
-    # Validate content type — strip parameters (e.g. "video/mp4; codecs=avc1" → "video/mp4")
+    """Upload and encrypt a media file."""
+    # Validate content type
     clean_content_type = file.content_type.split(';')[0].strip().lower() if file.content_type else None
     if clean_content_type and clean_content_type not in ALLOWED_MIME_TYPES:
         raise HTTPException(
@@ -182,7 +336,6 @@ async def api_upload_file(
             detail=f"Unsupported file type: {file.content_type}. Allowed: {', '.join(sorted(ALLOWED_MIME_TYPES))}",
         )
 
-    # Read file bytes
     file_bytes = await file.read()
 
     # Look up sender and receiver
@@ -194,7 +347,6 @@ async def api_upload_file(
     if not receiver_user:
         raise HTTPException(status_code=404, detail=f"Receiver '{receiver}' not found.")
 
-    # Get sender's signing key from the WebSocket session
     sender_keys = manager.get_keys(sender)
     if not sender_keys:
         raise HTTPException(
@@ -203,7 +355,6 @@ async def api_upload_file(
         )
 
     try:
-        # Encrypt and store the file
         result = encrypt_and_store_file(
             file_bytes=file_bytes,
             filename=file.filename or "unnamed",
@@ -213,7 +364,6 @@ async def api_upload_file(
             sender_sign_key=sender_keys["dilithium_sign"],
         )
 
-        # Save metadata to database
         media_id = save_media_record(
             db=db,
             sender=sender,
@@ -229,7 +379,6 @@ async def api_upload_file(
             signature_hex=result["signature_hex"],
         )
 
-        # Push WebSocket notification to receiver if online
         if receiver in manager.active_connections:
             await manager.send_json(receiver, {
                 "type": "media_message",
@@ -241,7 +390,6 @@ async def api_upload_file(
                 "file_size_bytes": result["file_size_bytes"],
             })
 
-        # Also send media crypto trace to sender for the visualizer
         await manager.send_json(sender, {
             "type": "media_crypto_trace",
             "direction": "sent",
@@ -260,7 +408,6 @@ async def api_upload_file(
             "algorithm_sym": "AES-256-GCM",
         })
 
-        # Fetch the saved record for timestamp
         record = get_media_record(db, media_id)
 
         return MediaUploadResponse(
@@ -281,30 +428,20 @@ def api_get_media(
     receiver_username: str,
     db: Session = Depends(get_db),
 ):
-    """
-    Download/stream a decrypted media file.
-
-    The receiver's Kyber secret key (from their active WebSocket session) is used
-    to decapsulate the per-file shared secret and decrypt the file in memory.
-    Decrypted bytes are streamed — never written to a temp file.
-    """
+    """Download/stream a decrypted media file."""
     record = get_media_record(db, media_id)
     if not record:
         raise HTTPException(status_code=404, detail="Media file not found.")
 
-    # Verify the requester is the intended receiver (or sender)
     if receiver_username != record.receiver and receiver_username != record.sender:
         raise HTTPException(status_code=403, detail="You are not authorized to access this file.")
 
-    # Get receiver's Kyber secret key from active WebSocket session
-    # For the sender viewing their own upload, we need the receiver's key to decrypt
-    # So we use the actual receiver's key
     decrypt_user = record.receiver
     user_keys = manager.get_keys(decrypt_user)
     if not user_keys:
         raise HTTPException(
             status_code=401,
-            detail=f"Receiver '{decrypt_user}' is not online. The file can only be decrypted when the receiver has an active session.",
+            detail=f"Receiver '{decrypt_user}' is not online. File can only be decrypted when receiver has an active session.",
         )
 
     try:
@@ -316,7 +453,6 @@ def api_get_media(
             receiver_secret_key=user_keys["kyber_secret"],
         )
 
-        # Determine content type from file_type
         ext = os.path.splitext(record.original_filename)[1].lower()
         content_type_map = {
             ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
@@ -325,7 +461,6 @@ def api_get_media(
             ".mov": "video/quicktime", ".avi": "video/x-msvideo",
             ".mkv": "video/x-matroska", ".3gp": "video/3gpp",
             ".mp3": "audio/mpeg", ".ogg": "audio/ogg", ".wav": "audio/wav",
-            # Documents
             ".pdf": "application/pdf", ".doc": "application/msword",
             ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             ".xls": "application/vnd.ms-excel",
@@ -336,8 +471,6 @@ def api_get_media(
         }
         ct = content_type_map.get(ext, "application/octet-stream")
 
-        # Build Content-Disposition with Unicode-safe filename
-        # ASCII fallback for basic 'filename', RFC 5987 'filename*' for Unicode
         from urllib.parse import quote
         ascii_name = record.original_filename.encode('ascii', 'replace').decode('ascii')
         utf8_name = quote(record.original_filename)
@@ -375,16 +508,7 @@ def api_get_media_history(
 # ---------------------------------------------------------------------------
 @app.websocket("/ws/{username}")
 async def websocket_endpoint(websocket: WebSocket, username: str):
-    """
-    WebSocket endpoint for real-time encrypted messaging.
-
-    Protocol:
-    1. Connect to /ws/{username}
-    2. Send auth message: {"type": "auth", "secret_key_kyber_hex": "...", "sign_key_dilithium_hex": "..."}
-    3. Send chat messages: {"type": "chat", "to": "recipient", "plaintext": "Hello!"}
-    4. Receive: decrypted_message, crypto_trace, user_list, message_sent, errors
-    """
-    # Create a dedicated DB session for this WebSocket connection
+    """WebSocket endpoint for real-time encrypted messaging."""
     db = SessionLocal()
     try:
         await handle_websocket(websocket, username, db)
@@ -397,4 +521,5 @@ async def websocket_endpoint(websocket: WebSocket, username: str):
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)
+    port = int(os.environ.get("PORT", "8000"))
+    uvicorn.run("backend.main:app", host="0.0.0.0", port=port, reload=True)

@@ -95,6 +95,50 @@ class UserListResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Firebase Auth Models (Phase 7 — TASK-26)
+# ---------------------------------------------------------------------------
+class FirebaseRegisterRequest(BaseModel):
+    """Request body for POST /auth/register (Firebase mode)."""
+    firebase_id_token: str = Field(
+        ..., description="Firebase ID token from frontend authentication"
+    )
+    username: str = Field(
+        ..., min_length=1, max_length=64,
+        description="Desired display name / username",
+    )
+
+
+class FirebaseLoginRequest(BaseModel):
+    """Request body for POST /auth/login (Firebase mode)."""
+    firebase_id_token: str = Field(
+        ..., description="Firebase ID token from frontend authentication"
+    )
+    secret_key_kyber_hex: str = Field(
+        ..., description="User's Kyber512 private key (hex-encoded)"
+    )
+    sign_key_dilithium_hex: str = Field(
+        ..., description="User's ML-DSA-44 signing key (hex-encoded)"
+    )
+
+
+class AuditLogEntry(BaseModel):
+    """A single audit log entry for the frontend panel."""
+    event_type: str
+    algorithm: str
+    user_id_hash: str
+    timestamp: str
+    success: bool
+    duration_ms: float
+    metadata: Optional[dict] = None
+
+
+class AuditLogResponse(BaseModel):
+    """Response from GET /audit/logs."""
+    logs: list[AuditLogEntry]
+    count: int
+
+
+# ---------------------------------------------------------------------------
 # Message Models
 # ---------------------------------------------------------------------------
 class MessageInfo(BaseModel):

@@ -10,3 +10,9 @@ pytest-asyncio
 httpx
 python-multipart
 aiofiles
+# Google Cloud SDKs (Phase 7)
+firebase-admin
+google-cloud-firestore
+google-cloud-storage
+google-cloud-kms
+google-cloud-logging

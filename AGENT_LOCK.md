@@ -27,3 +27,10 @@
 | TASK-23  | Antigravity-d3211adf     | DONE        | render.yaml + Dockerfile       |
 | TASK-24  | Antigravity-d3211adf     | DONE        | vercel.json + frontend .env.example |
 | TASK-25  | Antigravity-d3211adf     | DONE        | DEPLOY_GUIDE.md                |
+| TASK-26  | Antigravity-5999dc27     | DONE        | Firebase Auth (backend + frontend) |
+| TASK-27  | Antigravity-5999dc27     | DONE        | Firestore (users, messages, media metadata) |
+| TASK-28  | Antigravity-5999dc27     | DONE        | Google Cloud Storage (encrypted blobs) |
+| TASK-29  | Antigravity-5999dc27     | DONE        | Cloud KMS stub (envelope encryption) |
+| TASK-30  | Antigravity-5999dc27     | DONE        | Cloud Logging audit trail + AuditLogPanel UI |
+| TASK-31  | Antigravity-5999dc27     | DONE        | Cloud Run Dockerfile + cloudbuild.yaml + deploy script |
+

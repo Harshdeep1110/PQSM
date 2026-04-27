@@ -21,6 +21,7 @@
 
 import { useState } from 'react';
 import { formatHex, hexToByteLength, formatBytes } from '../utils/cryptoUtils';
+import { AuditLogPanel } from './AuditLogPanel';
 
 export function EncryptionVisualizer({ cryptoTraces, onClear }) {
   const [copiedId, setCopiedId] = useState(null);
@@ -376,27 +377,33 @@ export function EncryptionVisualizer({ cryptoTraces, onClear }) {
         </button>
       </div>
 
-      {/* Tab switcher (shown when both text and media traces exist) */}
-      {(hasTextTraces || hasMediaTraces) && (
-        <div className="visualizer-tabs">
-          <button
-            className={`visualizer-tab ${activeTab === 'text' ? 'active' : ''}`}
-            onClick={() => setActiveTab('text')}
-          >
-            💬 Message Trace
-          </button>
-          <button
-            className={`visualizer-tab ${activeTab === 'file' ? 'active' : ''}`}
-            onClick={() => setActiveTab('file')}
-          >
-            📎 File Trace
-          </button>
-        </div>
-      )}
+      {/* Tab switcher — always shown to include Audit Log */}
+      <div className="visualizer-tabs">
+        <button
+          className={`visualizer-tab ${activeTab === 'text' ? 'active' : ''}`}
+          onClick={() => setActiveTab('text')}
+        >
+          💬 Message
+        </button>
+        <button
+          className={`visualizer-tab ${activeTab === 'file' ? 'active' : ''}`}
+          onClick={() => setActiveTab('file')}
+        >
+          📎 File
+        </button>
+        <button
+          className={`visualizer-tab ${activeTab === 'audit' ? 'active' : ''}`}
+          onClick={() => setActiveTab('audit')}
+        >
+          📋 Audit Log
+        </button>
+      </div>
 
       {/* Content */}
-      <div className="visualizer-content" id="visualizer-content" style={{ padding: '20px' }}>
-        {!latestTrace ? (
+      <div className="visualizer-content" id="visualizer-content" style={{ padding: activeTab === 'audit' ? '0' : '20px' }}>
+        {activeTab === 'audit' ? (
+          <AuditLogPanel />
+        ) : !latestTrace ? (
           <div className="no-trace">
             <div className="lock-icon">🔐</div>
             <p>
