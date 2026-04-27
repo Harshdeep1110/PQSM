@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /build
 
 # Step 1: Clone and build liboqs from source
-RUN git clone --depth 1 --branch 0.12.0 https://github.com/open-quantum-safe/liboqs.git && \
+RUN git clone --depth 1 https://github.com/open-quantum-safe/liboqs.git && \
     cd liboqs && \
     mkdir build && cd build && \
     cmake -DCMAKE_INSTALL_PREFIX=/usr/local \
