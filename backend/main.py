@@ -328,33 +328,33 @@ async def api_upload_file(
     db: Session = Depends(get_db),
 ):
     """Upload and encrypt a media file."""
-    # Validate content type
-    clean_content_type = file.content_type.split(';')[0].strip().lower() if file.content_type else None
-    if clean_content_type and clean_content_type not in ALLOWED_MIME_TYPES:
-        raise HTTPException(
-            status_code=415,
-            detail=f"Unsupported file type: {file.content_type}. Allowed: {', '.join(sorted(ALLOWED_MIME_TYPES))}",
-        )
-
-    file_bytes = await file.read()
-
-    # Look up sender and receiver
-    sender_user = get_user(db, sender)
-    if not sender_user:
-        raise HTTPException(status_code=404, detail=f"Sender '{sender}' not found.")
-
-    receiver_user = get_user(db, receiver)
-    if not receiver_user:
-        raise HTTPException(status_code=404, detail=f"Receiver '{receiver}' not found.")
-
-    sender_keys = manager.get_keys(sender)
-    if not sender_keys:
-        raise HTTPException(
-            status_code=401,
-            detail="Sender not authenticated via WebSocket. Connect and send auth message first.",
-        )
-
     try:
+        # Validate content type
+        clean_content_type = file.content_type.split(';')[0].strip().lower() if file.content_type else None
+        if clean_content_type and clean_content_type not in ALLOWED_MIME_TYPES:
+            raise HTTPException(
+                status_code=415,
+                detail=f"Unsupported file type: {file.content_type}. Allowed: {', '.join(sorted(ALLOWED_MIME_TYPES))}",
+            )
+
+        file_bytes = await file.read()
+
+        # Look up sender and receiver
+        sender_user = get_user(db, sender)
+        if not sender_user:
+            raise HTTPException(status_code=404, detail=f"Sender '{sender}' not found.")
+
+        receiver_user = get_user(db, receiver)
+        if not receiver_user:
+            raise HTTPException(status_code=404, detail=f"Receiver '{receiver}' not found.")
+
+        sender_keys = manager.get_keys(sender)
+        if not sender_keys:
+            raise HTTPException(
+                status_code=401,
+                detail="Sender not authenticated via WebSocket. Connect and send auth message first.",
+            )
+
         result = encrypt_and_store_file(
             file_bytes=file_bytes,
             filename=file.filename or "unnamed",
