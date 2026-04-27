@@ -45,3 +45,11 @@ Thumbs.db
 # liboqs build artifacts (if built locally)
 liboqs/
 liboqs-build/
+
+# GCP secrets (NEVER commit)
+**/service-account.json
+**/credentials.json
+
+# npm cache
+npm-cache/
+

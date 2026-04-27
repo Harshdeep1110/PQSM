@@ -11,7 +11,7 @@ steps:
     args:
       - 'build'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/pqc-messenger-backend:$COMMIT_SHA'
+      - 'gcr.io/$PROJECT_ID/pqc-messenger-backend:$BUILD_ID'
       - '-t'
       - 'gcr.io/$PROJECT_ID/pqc-messenger-backend:latest'
       - '-f'
@@ -22,7 +22,7 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/$PROJECT_ID/pqc-messenger-backend:$COMMIT_SHA'
+      - 'gcr.io/$PROJECT_ID/pqc-messenger-backend:$BUILD_ID'
 
   - name: 'gcr.io/cloud-builders/docker'
     args:
@@ -36,7 +36,7 @@ steps:
       - 'run'
       - 'deploy'
       - 'pqc-messenger-backend'
-      - '--image=gcr.io/$PROJECT_ID/pqc-messenger-backend:$COMMIT_SHA'
+      - '--image=gcr.io/$PROJECT_ID/pqc-messenger-backend:$BUILD_ID'
       - '--region=us-central1'
       - '--platform=managed'
       - '--allow-unauthenticated'
@@ -50,7 +50,7 @@ steps:
       - '--set-env-vars=GCP_PROJECT_ID=$PROJECT_ID,STORAGE_BACKEND=firestore,USE_FIREBASE_AUTH=true,ENABLE_AUDIT_LOGGING=true,ENABLE_KMS=false,GCS_BUCKET_NAME=pqsm-18197-encrypted-data,ALLOWED_ORIGINS=*'
 
 images:
-  - 'gcr.io/$PROJECT_ID/pqc-messenger-backend:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/pqc-messenger-backend:$BUILD_ID'
   - 'gcr.io/$PROJECT_ID/pqc-messenger-backend:latest'
 
 options:
