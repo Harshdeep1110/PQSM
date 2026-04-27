@@ -46,6 +46,13 @@ export function useWebSocket(username, keys) {
             secret_key_kyber_hex: keys.secret_key_kyber_hex,
             sign_key_dilithium_hex: keys.sign_key_dilithium_hex,
           }));
+
+          // Start heartbeat to keep connection alive and detect dropped connections
+          window.pqcPingInterval = setInterval(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ type: 'ping' }));
+            }
+          }, 20000); // 20 seconds
         };
 
         ws.onmessage = (event) => {
@@ -59,6 +66,7 @@ export function useWebSocket(username, keys) {
 
         ws.onclose = () => {
           setConnected(false);
+          if (window.pqcPingInterval) clearInterval(window.pqcPingInterval);
           // Attempt reconnect after 3 seconds
           reconnectTimeoutRef.current = setTimeout(connect, 3000);
         };

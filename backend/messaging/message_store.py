@@ -1,14 +1,15 @@
 """
 Module: backend.messaging.message_store
-Purpose: Encrypted message persistence using SQLite.
+Purpose: Encrypted message persistence using SQLite or Firestore.
          Stores and retrieves encrypted messages — the server NEVER handles plaintext.
-Created by: TASK-06
+Created by: TASK-06, Modified for Firestore support
 
 All messages are stored in their encrypted form (hex-encoded ciphertext, nonce, tag,
 signature, and KEM ciphertext). Decryption happens client-side or in the WebSocket
 handler when delivering to the recipient.
 """
 
+import uuid
 from sqlalchemy.orm import Session
 from backend.database import MessageRecord
 
@@ -25,25 +26,31 @@ def save_message(
     tag_hex: str,
     signature_hex: str,
     kem_ciphertext_hex: str = "",
-) -> MessageRecord:
+) -> MessageRecord | str:
     """
-    Persist an encrypted message to the database.
-
+    Persist an encrypted message to the database (Firestore or SQLite).
     All data is stored in encrypted form — plaintext is NEVER written to disk.
 
-    Args:
-        db: SQLAlchemy database session.
-        sender: Sender's username.
-        receiver: Receiver's username.
-        ciphertext_hex: AES-GCM ciphertext (hex-encoded).
-        nonce_hex: AES-GCM nonce/IV (hex-encoded).
-        tag_hex: AES-GCM authentication tag (hex-encoded).
-        signature_hex: ML-DSA-44 signature of the ciphertext (hex-encoded).
-        kem_ciphertext_hex: Kyber KEM ciphertext for key decapsulation (hex-encoded).
-
     Returns:
-        The saved MessageRecord.
+        The saved MessageRecord (SQLite) or message_id string (Firestore).
     """
+    from backend.services.firestore_service import is_firestore_enabled
+
+    if is_firestore_enabled():
+        from backend.services.firestore_service import save_message_metadata_firestore
+        message_id = str(uuid.uuid4())
+        save_message_metadata_firestore(
+            message_id=message_id,
+            sender=sender,
+            receiver=receiver,
+            storage_ref="",
+            kem_ciphertext_hex=kem_ciphertext_hex,
+            nonce_hex=nonce_hex,
+            tag_hex=tag_hex,
+            signature_hex=signature_hex,
+        )
+        return message_id
+
     msg = MessageRecord(
         sender=sender,
         receiver=receiver,
@@ -64,18 +71,15 @@ def save_message(
 # ---------------------------------------------------------------------------
 def get_messages(db: Session, user_a: str, user_b: str) -> list[dict]:
     """
-    Retrieve encrypted message history between two users.
-
+    Retrieve encrypted message history between two users (Firestore or SQLite).
     Returns messages in both directions (A→B and B→A), ordered by timestamp.
-
-    Args:
-        db: SQLAlchemy database session.
-        user_a: First user's username.
-        user_b: Second user's username.
-
-    Returns:
-        List of message dicts with all encrypted fields.
     """
+    from backend.services.firestore_service import is_firestore_enabled
+
+    if is_firestore_enabled():
+        from backend.services.firestore_service import get_messages_firestore
+        return get_messages_firestore(user_a, user_b)
+
     messages = (
         db.query(MessageRecord)
         .filter(

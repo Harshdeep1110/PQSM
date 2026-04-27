@@ -71,6 +71,7 @@ export function FirebaseAuth({ onAuthSuccess }) {
         // Save keys locally
         const displayName = data.username;
         localStorage.setItem(`pqc_keys_${displayName}`, JSON.stringify(keys));
+        localStorage.setItem(`pqc_firebase_user_${userCredential.user.uid}`, displayName);
         sessionStorage.setItem('pqc_username', displayName);
         sessionStorage.setItem('pqc_keys', JSON.stringify(keys));
         sessionStorage.setItem('pqc_firebase_token', idToken);
