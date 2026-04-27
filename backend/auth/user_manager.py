@@ -130,15 +130,22 @@ def register_user(db: Session, username: str, password: str) -> dict:
 # ---------------------------------------------------------------------------
 def get_user(db: Session, username: str) -> UserRecord | None:
     """
-    Fetch a user record by username.
-
-    Args:
-        db: SQLAlchemy database session.
-        username: The username to look up.
-
-    Returns:
-        UserRecord or None if not found.
+    Fetch a user record by username (checks Firestore if enabled, fallback to SQLite).
     """
+    from backend.services.firestore_service import is_firestore_enabled, get_user_by_username_firestore
+
+    if is_firestore_enabled():
+        fs_user = get_user_by_username_firestore(username)
+        if fs_user:
+            # Create a mock object that mimics UserRecord so the rest of the app works
+            class FirestoreUserProxy:
+                def __init__(self, data):
+                    self.username = data["username"]
+                    self.public_key_kyber = bytes.fromhex(data["public_key_kyber_hex"])
+                    self.public_key_dilithium = bytes.fromhex(data["public_key_dilithium_hex"])
+            return FirestoreUserProxy(fs_user)
+        return None
+
     return db.query(UserRecord).filter(UserRecord.username == username).first()
 
 
