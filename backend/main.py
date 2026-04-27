@@ -419,7 +419,12 @@ async def api_upload_file(
         )
 
     except ValueError as e:
+        logger.error(f"Upload ValueError: {e}")
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        import traceback
+        logger.error(f"Upload Exception: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Server error during upload: {str(e)}")
 
 
 @app.get("/media/{media_id}", tags=["Media"])
