@@ -106,8 +106,8 @@ export function EncryptionVisualizer({ cryptoTraces, onClear }) {
           fontSize: '0.7rem',
           fontWeight: 600,
           background: trace.direction === 'sent'
-            ? 'rgba(29, 155, 240, 0.1)'
-            : 'rgba(0, 186, 124, 0.1)',
+            ? 'rgba(99, 102, 241, 0.15)'
+            : 'rgba(52, 211, 153, 0.15)',
           color: trace.direction === 'sent'
             ? 'var(--accent-primary)'
             : 'var(--accent-emerald)',
@@ -204,7 +204,7 @@ export function EncryptionVisualizer({ cryptoTraces, onClear }) {
         <div className="crypto-step-header">
           <span className="step-number">5</span>
           <span className="step-label">Decrypted Output</span>
-          <span className="step-algo" style={{ background: 'rgba(0,186,124,0.08)', color: 'var(--accent-emerald)' }}>
+          <span className="step-algo" style={{ background: 'rgba(52,211,153,0.1)', color: 'var(--accent-emerald)' }}>
             ✓ Verified
           </span>
         </div>
@@ -233,8 +233,8 @@ export function EncryptionVisualizer({ cryptoTraces, onClear }) {
           fontSize: '0.7rem',
           fontWeight: 600,
           background: trace.direction === 'sent'
-            ? 'rgba(29, 155, 240, 0.1)'
-            : 'rgba(0, 186, 124, 0.1)',
+            ? 'rgba(99, 102, 241, 0.15)'
+            : 'rgba(52, 211, 153, 0.15)',
           color: trace.direction === 'sent'
             ? 'var(--accent-primary)'
             : 'var(--accent-emerald)',
@@ -341,7 +341,7 @@ export function EncryptionVisualizer({ cryptoTraces, onClear }) {
         <div className="crypto-step-header">
           <span className="step-number">5</span>
           <span className="step-label">Decryption Status</span>
-          <span className="step-algo" style={{ background: 'rgba(0,186,124,0.08)', color: 'var(--accent-emerald)' }}>
+          <span className="step-algo" style={{ background: 'rgba(52,211,153,0.1)', color: 'var(--accent-emerald)' }}>
             ✓ Verified
           </span>
         </div>
