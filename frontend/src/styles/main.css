@@ -9,56 +9,56 @@
 
 /* ===== CSS Custom Properties (Design Tokens) ===== */
 :root {
-  /* Color Palette — Quantum-inspired deep blues & violets */
-  --bg-primary: #0a0e1a;
-  --bg-secondary: #111827;
-  --bg-tertiary: #1a2035;
-  --bg-card: rgba(17, 24, 39, 0.7);
-  --bg-glass: rgba(26, 32, 53, 0.65);
-  --bg-input: rgba(30, 41, 59, 0.8);
+  /* Color Palette — Premium Clean Noir */
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #121212;
+  --bg-tertiary: #181818;
+  --bg-card: #121212;
+  --bg-glass: #121212;
+  --bg-input: #1a1a1a;
 
   /* Accent colors */
-  --accent-primary: #6366f1;     /* Indigo */
-  --accent-secondary: #8b5cf6;   /* Violet */
-  --accent-cyan: #22d3ee;        /* Cyan — for crypto highlights */
-  --accent-emerald: #34d399;     /* Emerald — for success/plaintext */
+  --accent-primary: #ffffff;     /* White/Light Gray */
+  --accent-secondary: #e0e0e0;
+  --accent-cyan: #d0d0d0;        /* Subtle */
+  --accent-emerald: #4ade80;     /* Emerald — for success/plaintext */
   --accent-amber: #fbbf24;       /* Amber — for warnings */
   --accent-rose: #f43f5e;        /* Rose — for errors */
 
-  /* Gradients */
-  --gradient-primary: linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa);
-  --gradient-accent: linear-gradient(135deg, #22d3ee, #6366f1);
-  --gradient-dark: linear-gradient(180deg, #0a0e1a 0%, #111827 100%);
-  --gradient-card: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.05));
-  --gradient-glow: radial-gradient(ellipse at center, rgba(99,102,241,0.15), transparent 70%);
+  /* Gradients (Flattened for clean design) */
+  --gradient-primary: #2b2b2b;
+  --gradient-accent: #333;
+  --gradient-dark: #0a0a0a;
+  --gradient-card: #141414;
+  --gradient-glow: transparent;
 
   /* Text */
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --text-accent: #a5b4fc;
+  --text-primary: #f5f5f5;
+  --text-secondary: #a3a3a3;
+  --text-muted: #666666;
+  --text-accent: #ffffff;
 
   /* Borders */
-  --border-subtle: rgba(99, 102, 241, 0.15);
-  --border-medium: rgba(99, 102, 241, 0.25);
-  --border-glow: rgba(99, 102, 241, 0.4);
+  --border-subtle: #262626;
+  --border-medium: #333333;
+  --border-glow: transparent;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.2);
-  --shadow-glow-strong: 0 0 40px rgba(99, 102, 241, 0.3);
+  /* Shadows - completely flattened */
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-glow: none;
+  --shadow-glow-strong: none;
 
   /* Typography */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 
   /* Spacing */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  --radius-sm: 0px;
+  --radius-md: 2px;
+  --radius-lg: 4px;
+  --radius-xl: 4px;
 
   /* Transitions */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -129,8 +129,8 @@ body {
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 10px rgba(99, 102, 241, 0.2); }
-  50% { box-shadow: 0 0 25px rgba(99, 102, 241, 0.4); }
+  0%, 100% {  }
+  50% {  }
 }
 
 @keyframes shimmer {
@@ -174,21 +174,21 @@ body {
   height: 600px;
   background: var(--gradient-glow);
   border-radius: 50%;
-  filter: blur(80px);
+  
   pointer-events: none;
 }
 
 .login-card {
   position: relative;
   background: var(--bg-glass);
-  backdrop-filter: blur(20px);
+  
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
   padding: 48px;
   width: 100%;
   max-width: 440px;
   animation: fadeIn 0.6s ease-out;
-  box-shadow: var(--shadow-lg), var(--shadow-glow);
+  
 }
 
 .login-card h1 {
@@ -258,7 +258,7 @@ body {
 
 .login-input-group input:focus {
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  
 }
 
 .login-input-group input::placeholder {
@@ -283,7 +283,7 @@ body {
 
 .login-btn:hover {
   transform: translateY(-1px);
-  box-shadow: var(--shadow-glow-strong);
+  
 }
 
 .login-btn:active {
@@ -343,7 +343,7 @@ body {
 .auth-tab.active {
   background: var(--gradient-primary);
   color: white;
-  box-shadow: var(--shadow-sm);
+  
 }
 
 /* ===== Prototype Badges ===== */
@@ -529,7 +529,7 @@ body {
   border-radius: 50%;
   background: var(--accent-emerald);
   flex-shrink: 0;
-  box-shadow: 0 0 8px rgba(52, 211, 153, 0.4);
+  
 }
 
 .sidebar-footer {
@@ -755,7 +755,7 @@ body {
 
 .message-input:focus {
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  
 }
 
 .message-input::placeholder {
@@ -781,7 +781,7 @@ body {
 
 .send-btn:hover {
   transform: translateY(-1px);
-  box-shadow: var(--shadow-glow);
+  
 }
 
 .send-btn:active {
@@ -1050,7 +1050,7 @@ body {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
+  
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1067,7 +1067,7 @@ body {
   max-width: 520px;
   max-height: 80vh;
   overflow-y: auto;
-  box-shadow: var(--shadow-lg), var(--shadow-glow-strong);
+  
   animation: slideInUp 0.3s ease-out;
 }
 
@@ -1232,7 +1232,7 @@ body {
 
 .media-send-btn:hover {
   transform: translateY(-1px);
-  box-shadow: var(--shadow-glow);
+  
 }
 
 .media-send-btn:disabled {
@@ -1432,7 +1432,7 @@ body {
   max-height: 90vh;
   object-fit: contain;
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
+  
 }
 
 .media-lightbox-close {
@@ -1610,7 +1610,7 @@ body {
 
 .voice-send-btn:hover {
   transform: scale(1.05);
-  box-shadow: var(--shadow-glow);
+  
 }
 
 /* Uploading state */
