@@ -86,7 +86,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ---------------------------------------------------------------------------
+# Global Exception Handler (Fixes CORS missing on 500 errors)
+# ---------------------------------------------------------------------------
+from fastapi.responses import JSONResponse
+from fastapi import Request
 
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    import traceback
+    logger.error(f"Global Exception: {exc}\n{traceback.format_exc()}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal Server Error: {str(exc)}"},
+    )
 
 # ---------------------------------------------------------------------------
 # Startup Event
