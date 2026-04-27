@@ -9,56 +9,56 @@
 
 /* ===== CSS Custom Properties (Design Tokens) ===== */
 :root {
-  /* Color Palette — Premium Clean Noir */
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #121212;
-  --bg-tertiary: #181818;
-  --bg-card: #121212;
-  --bg-glass: #121212;
-  --bg-input: #1a1a1a;
+  /* Color Palette — Modern SaaS Dark */
+  --bg-primary: #0f172a;       /* Slate 900 */
+  --bg-secondary: #1e293b;     /* Slate 800 */
+  --bg-tertiary: #334155;      /* Slate 700 */
+  --bg-card: #1e293b;          /* Slate 800 */
+  --bg-glass: rgba(30, 41, 59, 0.85); /* Transparent Slate 800 */
+  --bg-input: #0f172a;         /* Slate 900 */
 
   /* Accent colors */
-  --accent-primary: #ffffff;     /* White/Light Gray */
-  --accent-secondary: #e0e0e0;
-  --accent-cyan: #d0d0d0;        /* Subtle */
-  --accent-emerald: #4ade80;     /* Emerald — for success/plaintext */
-  --accent-amber: #fbbf24;       /* Amber — for warnings */
-  --accent-rose: #f43f5e;        /* Rose — for errors */
+  --accent-primary: #6366f1;     /* Indigo 500 */
+  --accent-secondary: #818cf8;   /* Indigo 400 */
+  --accent-cyan: #38bdf8;        /* Sky 400 */
+  --accent-emerald: #10b981;     /* Emerald 500 — for success/plaintext */
+  --accent-amber: #f59e0b;       /* Amber 500 — for warnings */
+  --accent-rose: #f43f5e;        /* Rose 500 — for errors */
 
-  /* Gradients (Flattened for clean design) */
-  --gradient-primary: #2b2b2b;
-  --gradient-accent: #333;
-  --gradient-dark: #0a0a0a;
-  --gradient-card: #141414;
-  --gradient-glow: transparent;
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, #6366f1, #8b5cf6); /* Indigo to Violet */
+  --gradient-accent: linear-gradient(135deg, #38bdf8, #818cf8);  /* Sky to Indigo */
+  --gradient-dark: #0f172a;
+  --gradient-card: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  --gradient-glow: radial-gradient(circle at center, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
 
   /* Text */
-  --text-primary: #f5f5f5;
-  --text-secondary: #a3a3a3;
-  --text-muted: #666666;
+  --text-primary: #f8fafc;       /* Slate 50 */
+  --text-secondary: #cbd5e1;     /* Slate 300 */
+  --text-muted: #94a3b8;         /* Slate 400 */
   --text-accent: #ffffff;
 
   /* Borders */
-  --border-subtle: #262626;
-  --border-medium: #333333;
-  --border-glow: transparent;
+  --border-subtle: rgba(255, 255, 255, 0.08); /* Slate 800-ish */
+  --border-medium: rgba(255, 255, 255, 0.15); /* Slate 700-ish */
+  --border-glow: rgba(99, 102, 241, 0.3);
 
-  /* Shadows - completely flattened */
-  --shadow-sm: none;
-  --shadow-md: none;
-  --shadow-lg: none;
-  --shadow-glow: none;
-  --shadow-glow-strong: none;
+  /* Shadows - Modern SaaS styling */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
+  --shadow-glow-strong: 0 0 30px rgba(99, 102, 241, 0.25);
 
   /* Typography */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 
-  /* Spacing */
-  --radius-sm: 0px;
-  --radius-md: 2px;
-  --radius-lg: 4px;
-  --radius-xl: 4px;
+  /* Spacing - Softer Geometry */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
 
   /* Transitions */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -181,14 +181,14 @@ body {
 .login-card {
   position: relative;
   background: var(--bg-glass);
-  
+  backdrop-filter: blur(12px);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
   padding: 48px;
   width: 100%;
   max-width: 440px;
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
   animation: fadeIn 0.6s ease-out;
-  
 }
 
 .login-card h1 {
@@ -254,6 +254,7 @@ body {
   font-size: 1rem;
   transition: var(--transition-base);
   outline: none;
+  box-shadow: inset var(--shadow-sm);
 }
 
 .login-input-group input:focus {
@@ -283,7 +284,7 @@ body {
 
 .login-btn:hover {
   transform: translateY(-1px);
-  
+  box-shadow: var(--shadow-md), var(--shadow-glow);
 }
 
 .login-btn:active {
@@ -343,7 +344,7 @@ body {
 .auth-tab.active {
   background: var(--gradient-primary);
   color: white;
-  
+  box-shadow: var(--shadow-sm);
 }
 
 /* ===== Prototype Badges ===== */
@@ -679,6 +680,7 @@ body {
   position: relative;
   /* Prevent bubble itself from clipping its children */
   min-width: 0;
+  box-shadow: var(--shadow-sm);
 }
 
 .message-bubble.sent {
@@ -751,6 +753,7 @@ body {
   font-size: 0.9rem;
   outline: none;
   transition: var(--transition-base);
+  box-shadow: inset var(--shadow-sm);
 }
 
 .message-input:focus {
@@ -781,7 +784,7 @@ body {
 
 .send-btn:hover {
   transform: translateY(-1px);
-  
+  box-shadow: var(--shadow-md), var(--shadow-glow);
 }
 
 .send-btn:active {
