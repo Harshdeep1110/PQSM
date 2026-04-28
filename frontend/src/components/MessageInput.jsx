@@ -5,10 +5,8 @@
  */
 
 import { useState } from 'react';
-import { MediaUpload } from './MediaUpload';
-import { VoiceRecorder } from './VoiceRecorder';
 
-export function MessageInput({ selectedUser, onSendMessage, onMediaSent, disabled, currentUser }) {
+export function MessageInput({ selectedUser, onSendMessage, disabled, currentUser }) {
   const [text, setText] = useState('');
 
   const handleSend = () => {
@@ -29,12 +27,6 @@ export function MessageInput({ selectedUser, onSendMessage, onMediaSent, disable
   return (
     <div className="message-input-container" id="message-input-container">
       <div className="message-input-wrapper">
-        <MediaUpload
-          currentUser={currentUser}
-          selectedUser={selectedUser}
-          disabled={disabled}
-          onMediaSent={onMediaSent}
-        />
         <input
           type="text"
           className="message-input"
@@ -59,12 +51,6 @@ export function MessageInput({ selectedUser, onSendMessage, onMediaSent, disable
           <span>🔐</span>
           Send
         </button>
-        <VoiceRecorder
-          currentUser={currentUser}
-          selectedUser={selectedUser}
-          disabled={disabled}
-          onMediaSent={onMediaSent}
-        />
       </div>
     </div>
   );
