@@ -66,11 +66,140 @@
   --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ===== Light Mode Theme ===== */
+[data-theme="light"] {
+  /* Soothing backgrounds — no harsh pure-white */
+  --bg-primary: #F4F5F7;
+  --bg-secondary: #EDEEF0;
+  --bg-tertiary: #E4E5E9;
+  --bg-card: #EDEEF0;
+  --bg-glass: #EDEEF0;
+  --bg-input: #E4E5E9;
+
+  /* Accent colors — slightly muted for light surfaces */
+  --accent-primary: #3B3B3B;
+  --accent-secondary: #555555;
+  --accent-cyan: #707070;
+  --accent-emerald: #16a34a;
+  --accent-amber: #d97706;
+  --accent-rose: #e11d48;
+
+  /* Gradients */
+  --gradient-primary: #4a4a4a;
+  --gradient-accent: #5a5a5a;
+  --gradient-dark: #F4F5F7;
+  --gradient-card: #E8E9EC;
+  --gradient-glow: transparent;
+
+  /* Text — gentle dark grays, never pure black */
+  --text-primary: #2D2D2D;
+  --text-secondary: #5A5A5A;
+  --text-muted: #8E8E93;
+  --text-accent: #2D2D2D;
+
+  /* Borders */
+  --border-subtle: #D1D1D6;
+  --border-medium: #BCBCC1;
+  --border-glow: transparent;
+
+  /* Shadows — subtle soft shadows */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md: 0 2px 6px rgba(0,0,0,0.08);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,0.1);
+  --shadow-glow: none;
+  --shadow-glow-strong: none;
+}
+
+/* Light-mode overrides for hardcoded rgba backgrounds */
+[data-theme="light"] .auth-tabs {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .step-data {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .media-audio-container {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .media-preview-content {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .media-progress-container {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .media-preview-overlay {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="light"] .visualizer-tabs {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .media-lightbox {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+[data-theme="light"] .scrollbar-thumb {
+  background: var(--border-medium);
+}
+
+/* Ensure sent bubble text stays white in both themes */
+[data-theme="light"] .message-bubble.sent {
+  color: #ffffff;
+}
+
+[data-theme="light"] .message-bubble.sent .message-text {
+  color: #ffffff;
+}
+
+[data-theme="light"] .message-bubble.sent .message-meta {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+[data-theme="light"] .step-number {
+  color: #ffffff;
+}
+
+[data-theme="light"] .login-btn {
+  color: #ffffff;
+}
+
+[data-theme="light"] .auth-tab.active {
+  color: #ffffff;
+}
+
+[data-theme="light"] .send-btn {
+  color: #ffffff;
+}
+
+[data-theme="light"] .user-avatar {
+  color: #ffffff;
+}
+
+[data-theme="light"] .media-send-btn {
+  color: #ffffff;
+}
+
+[data-theme="light"] .voice-send-btn {
+  color: #ffffff;
+}
+
+/* Telegram-themed light mode background */
+[data-theme="light"] .messages-container {
+  background-color: #e2e8f0;
+  background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23000000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' opacity='0.05'%3E%3Cpath d='M30 20 L33 27 L40 28 L35 33 L36 40 L30 36 L24 40 L25 33 L20 28 L27 27 Z' /%3E%3Cpath d='M120 30 C120 20 135 20 135 30 C135 40 120 50 120 50 C120 50 105 40 105 30 C105 20 120 20 120 30 Z' /%3E%3Cpath d='M40 130 L60 120 L45 140 Z M40 130 L55 145 L60 120 M40 130 L30 140' /%3E%3Ccircle cx='160' cy='140' r='15' /%3E%3Cpath d='M155 135 v2 M165 135 v2 M153 145 C156 150 164 150 167 145' /%3E%3Cpath d='M80 80 h20 v10 c0 5 -5 10 -10 10 c-5 0 -10 -5 -10 -10 z M100 82 h5 c3 0 3 6 0 6 M85 75 q2 -5 5 -5 M90 75 q2 -5 5 -5 M95 75 q2 -5 5 -5' /%3E%3Cpath d='M170 80 v15 a5 5 0 1 1 -5 -5 h5 v-10 h10 v5' /%3E%3Ccircle cx='90' cy='170' r='8' /%3E%3Cpath d='M90 155 v3 M90 182 v3 M75 170 h3 M102 170 h3 M80 160 l2 2 M100 180 l-2 -2 M80 180 l2 -2 M100 160 l-2 2' /%3E%3Cpath d='M10 90 Q15 80 20 90 T30 90' /%3E%3Cpath d='M150 20 Q155 10 160 20 T170 20' /%3E%3C/g%3E%3C/svg%3E");
+}
+
 /* ===== Reset & Base ===== */
 *, *::before, *::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  transition: background-color 350ms ease, color 350ms ease, border-color 350ms ease, box-shadow 350ms ease;
 }
 
 html {
@@ -162,6 +291,14 @@ body {
   background: var(--gradient-dark);
   position: relative;
   overflow: hidden;
+}
+
+/* Floating theme toggle on login screen */
+.login-theme-toggle {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  z-index: 10;
 }
 
 .login-screen::before {
@@ -427,6 +564,12 @@ body {
   border-bottom: 1px solid var(--border-subtle);
 }
 
+.sidebar-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .sidebar-header h2 {
   font-size: 1.1rem;
   font-weight: 700;
@@ -435,6 +578,33 @@ body {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin-bottom: 4px;
+}
+
+/* ===== Theme Toggle Button ===== */
+.theme-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background-color 250ms ease, color 250ms ease, transform 400ms cubic-bezier(0.4, 0, 0.2, 1), border-color 250ms ease;
+  flex-shrink: 0;
+}
+
+.theme-toggle-btn:hover {
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--text-primary);
+  border-color: var(--border-medium);
+  transform: rotate(30deg) scale(1.1);
+}
+
+.theme-toggle-btn:active {
+  transform: rotate(0deg) scale(0.95);
 }
 
 .sidebar-header .connection-status {
@@ -641,6 +811,10 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  
+  /* Telegram-themed dark mode background */
+  background-color: #0f172a;
+  background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' opacity='0.05'%3E%3Cpath d='M30 20 L33 27 L40 28 L35 33 L36 40 L30 36 L24 40 L25 33 L20 28 L27 27 Z' /%3E%3Cpath d='M120 30 C120 20 135 20 135 30 C135 40 120 50 120 50 C120 50 105 40 105 30 C105 20 120 20 120 30 Z' /%3E%3Cpath d='M40 130 L60 120 L45 140 Z M40 130 L55 145 L60 120 M40 130 L30 140' /%3E%3Ccircle cx='160' cy='140' r='15' /%3E%3Cpath d='M155 135 v2 M165 135 v2 M153 145 C156 150 164 150 167 145' /%3E%3Cpath d='M80 80 h20 v10 c0 5 -5 10 -10 10 c-5 0 -10 -5 -10 -10 z M100 82 h5 c3 0 3 6 0 6 M85 75 q2 -5 5 -5 M90 75 q2 -5 5 -5 M95 75 q2 -5 5 -5' /%3E%3Cpath d='M170 80 v15 a5 5 0 1 1 -5 -5 h5 v-10 h10 v5' /%3E%3Ccircle cx='90' cy='170' r='8' /%3E%3Cpath d='M90 155 v3 M90 182 v3 M75 170 h3 M102 170 h3 M80 160 l2 2 M100 180 l-2 -2 M80 180 l2 -2 M100 160 l-2 2' /%3E%3Cpath d='M10 90 Q15 80 20 90 T30 90' /%3E%3Cpath d='M150 20 Q155 10 160 20 T170 20' /%3E%3C/g%3E%3C/svg%3E");
 }
 
 .no-chat-selected {

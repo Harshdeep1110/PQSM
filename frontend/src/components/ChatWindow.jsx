@@ -7,7 +7,6 @@
 
 import { useEffect, useRef } from 'react';
 import { formatTimestamp } from '../utils/cryptoUtils';
-import { MediaMessage } from './MediaMessage';
 
 export function ChatWindow({ messages, currentUser, selectedUser }) {
   const messagesEndRef = useRef(null);
@@ -58,20 +57,7 @@ export function ChatWindow({ messages, currentUser, selectedUser }) {
           className={`message-bubble ${msg.direction}`}
           id={`msg-${msg.id}`}
         >
-          {/* Media message */}
-          {msg.type === 'media_message' ? (
-            <MediaMessage
-              mediaId={msg.media_id}
-              fileType={msg.file_type}
-              originalFilename={msg.original_filename}
-              fileSizeBytes={msg.file_size_bytes}
-              sender={msg.sender}
-              currentUser={currentUser}
-            />
-          ) : (
-            /* Text message */
-            <div className="message-text">{msg.plaintext}</div>
-          )}
+          <div className="message-text">{msg.plaintext}</div>
           <div className="message-meta">
             <span>{formatTimestamp(msg.timestamp)}</span>
             {msg.direction === 'received' && msg.signatureValid !== undefined && (
