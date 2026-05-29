@@ -1,0 +1,83 @@
+# PQC Messaging Agent - Architecture Documentation
+
+## 1. System Overview
+**Name**: PQC Messenger
+**Description**: A Post-Quantum Secure Messaging System utilizing hybrid encryption. It is designed to be resilient against both classical and quantum computing attacks by employing quantum-resistant algorithms.
+**Architecture Type**: Client-Server with Real-time WebSocket support.
+
+## 2. Technology Stack
+### Frontend
+- **Framework**: React 19 (via Vite)
+- **Networking**: Axios for REST APIs, native WebSocket for real-time communication.
+- **Authentication**: Firebase Authentication.
+- **Other**: UUID for tracking.
+
+### Backend
+- **Framework**: FastAPI (Python)
+- **Database**: SQLite (via SQLAlchemy) for local/relational storage, with integrations for Google Firestore.
+- **Server**: Uvicorn.
+- **Cryptography Libraries**: 
+  - `liboqs` (Open Quantum Safe library via Python bindings).
+- **Cloud Integrations**: Firebase Auth, Google Firestore, Google Cloud Storage (GCS), Google Cloud KMS, and Google Cloud Logging.
+
+### Cryptographic Primitives
+- **Key Encapsulation Mechanism (KEM)**: Kyber512 (Post-Quantum)
+- **Digital Signatures**: ML-DSA-44 (Dilithium2) (Post-Quantum)
+- **Symmetric Encryption**: AES-256-GCM (Classical, Quantum-resistant with 256-bit keys)
+
+## 3. Directory Structure & Key Components
+### Backend Components (`/backend`)
+- **`main.py`**: Application entry point. Defines all REST APIs and WebSocket endpoints.
+- **`models.py`**: Pydantic models for API request/response validation and schemas.
+- **`database.py`**: Database connection setup and SQLAlchemy base.
+- **`auth/`**: Manages user registration, login, and key verification.
+- **`crypto/`**: Wrappers and utilities for cryptographic algorithms (`liboqs` bindings).
+- **`messaging/`**: Message persistence and WebSocket handler (`ws_handler.py` for real-time delivery).
+- **`media/`**: File upload, encryption, decryption, and storage mechanisms.
+- **`services/`**: Cloud integration services (Firebase, Firestore, Audit Logger).
+
+### Frontend Components (`/frontend/src`)
+- **`App.jsx`**: Main routing and layout component.
+- **`components/`**: Reusable UI components (e.g., chat window, media upload).
+- **`hooks/`**: Custom React hooks for state and websocket management.
+- **`services/`**: API and WebSocket client services.
+- **`utils/`**: Helper functions (e.g., local crypto operations if any, formatting).
+
+## 4. API Endpoints
+### REST API
+- `GET  /` : Health check & status.
+- `POST /register` : Local authentication registration (generates PQC keypairs).
+- `POST /login` : Local authentication login.
+- `POST /auth/register` : Firebase-backed registration.
+- `POST /auth/login` : Firebase-backed login.
+- `GET  /users` : List all registered users and their public keys.
+- `GET  /messages/{a}/{b}` : Fetch encrypted message history between users A and B.
+- `GET  /audit/logs` : Fetch cryptographic audit log entries.
+- `POST /upload` : Upload and encrypt a media file.
+- `GET  /media/{id}` : Download/stream a decrypted media file.
+- `GET  /media/history/{a}/{b}` : Fetch media file history between users.
+
+### WebSocket
+- `WS /ws/{username}` : Bidirectional real-time connection. Handles live chat messages, crypto trace events (for visualization), media notifications, and online status.
+
+## 5. Data Models (Entities)
+### User Entities
+- `UserInfo`: username, public_key_kyber_hex, verify_key_dilithium_hex.
+- Firebase integration uses `uid` and maps it to PQC public keys.
+
+### Message Entities
+- `MessageInfo`: sender, receiver, ciphertext_hex, nonce_hex, tag_hex, signature_hex, kem_ciphertext_hex.
+
+### Media Entities
+- `MediaFileInfo`: sender, receiver, file_type, original_filename, file_size_bytes, stored_filename, encrypted_path.
+
+### Audit Logging
+- `AuditLogEntry`: event_type, algorithm, user_id_hash, timestamp, success, duration_ms, metadata.
+
+## 6. Cryptographic Data Flow (Message Sending)
+1. **Key Generation**: Upon registration, Kyber and Dilithium keypairs are generated. Public keys go to the server, private keys are returned to the client (or used transparently if server-side for now).
+2. **KEM Encapsulation**: To send a message, the system uses the Receiver's Kyber public key to encapsulate a shared secret.
+3. **Symmetric Encryption**: The message payload is encrypted using AES-256-GCM with the derived shared secret.
+4. **Digital Signature**: The sender uses their Dilithium private key to sign the ciphertext or hash, ensuring non-repudiation and authenticity.
+5. **Transmission**: The payload (`ciphertext`, `nonce`, `tag`, `signature`, `kem_ciphertext`) is sent over WebSocket or REST.
+6. **Decapsulation & Decryption**: The receiver uses their Kyber private key to decapsulate the `kem_ciphertext` to get the shared secret, verifies the signature with the Sender's Dilithium public key, and decrypts the `ciphertext` using AES-256-GCM.
